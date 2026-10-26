@@ -31,6 +31,7 @@
 - src/components/ : 화면 컴포넌트
 - src/lib/ : 서버 로직, DB
 - src/types/ : 공유 타입
+- tests/ : 테스트 (api/, components/)
 - docs/ : 명세 문서
 
 ## 반드시 참고할 문서
@@ -49,3 +50,4 @@
 ## 자주 쓰는 명령
 - 개발 서버: npm run dev
 - 테스트: npm test
+- 코드 검사: npm run lint
