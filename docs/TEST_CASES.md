@@ -3,28 +3,30 @@
 - 문서 상태: 초안
 - 기준 문서: docs/PRD.md, docs/TRD.md, docs/DATA_MODEL.md, docs/API_SPEC.md, docs/COMPONENT_SPEC.md
 - 작성일: 2026-10-26
+- 수정일: 2026-10-27 (API 테스트를 pytest로, DB를 PostgreSQL로 변경)
 
 ## 1. 개요
 
-| 구분 | ID 접두어 | 도구 | 대상 |
-|------|-----------|------|------|
-| API 테스트 | API- | Jest | `app/api/todos` 라우트 (+ 그 아래 src/lib) |
-| 컴포넌트 테스트 | CMP- | Jest + Testing Library | `src/components/` 컴포넌트 |
+| 구분 | ID 접두어 | 도구 | 대상 | 파일 위치 | 실행 |
+|------|-----------|------|------|-----------|------|
+| API 테스트 | API- | pytest + FastAPI TestClient | FastAPI `/api/todos` (+ 그 아래 validation, repository) | `backend/tests/` | `pytest` (backend/에서) |
+| 컴포넌트 테스트 | CMP- | Jest + Testing Library | `src/components/` 컴포넌트 | `tests/components/` | `npm test` |
 
 ### 공통 전제
 
 - 모든 테스트는 빈 저장소(할 일 0개)에서 시작한다. 필요한 할 일은 테스트 안에서 미리 넣는다.
 - 에러 응답은 항상 `{ "error": { "code": "...", "message": "..." } }` 형식이다. 테스트는 상태 코드와 `code`를 확인한다. `message`는 바뀔 수 있으므로 확인하지 않는다. (화면 테스트에서 문구를 보여주는지 확인할 때만 쓴다)
-- "DB 오류"는 저장소 함수가 에러를 던지도록 가짜(mock)로 바꿔서 만든다.
-- 컴포넌트 테스트에서 API는 `fetch`를 가짜(mock)로 바꿔서 흉내 낸다.
+- FastAPI 기본 에러 형식(`422`, `{ "detail": ... }`)이 나오면 실패로 본다.
+- "DB 오류"는 FastAPI의 `dependency_overrides`로 저장소를 에러를 던지는 가짜로 바꿔서 만든다.
+- 컴포넌트 테스트에서 API는 `fetch`를 가짜(mock)로 바꿔서 흉내 낸다. 백엔드를 띄우지 않는다.
 - 화면 요소는 COMPONENT_SPEC 6장의 라벨과 role로 찾는다.
-- 글에서 "100자 제목"은 공백 없이 `"가"`를 100번 이어 붙인 문자열이다.
+- 글에서 "100자 제목"은 공백 없이 `"가"`를 100번 이어 붙인 문자열이다. "이모지"는 😀(코드 포인트 1개)를 뜻한다.
 
 ### 버전별 적용
 
 | 구분 | v0.1 | v0.2 | v0.3~ |
 |------|------|------|-------|
-| API 테스트 | 해당 없음 | 서버 메모리로 실행 | MySQL 테스트 DB로 실행 |
+| API 테스트 | 해당 없음 | 서버 메모리로 실행 | PostgreSQL 테스트 DB로 실행 |
 | 컴포넌트 테스트 (TodoForm/TodoList/TodoItem) | 실행 | 실행 | 실행 |
 | 컴포넌트 테스트 (TodoApp) | 3.5절 | 3.4절 | 3.4절 |
 
@@ -133,8 +135,8 @@
 |----|------|------|-----------|
 | API-51 | 모든 에러 응답 | 2.1~2.4의 에러 테스트마다 응답 본문 확인 | `error` 객체 하나만 있고, 그 안에 `code`(문자열)와 `message`(비어 있지 않은 문자열)가 있음 |
 | API-52 | 모든 응답 | 본문이 있는 응답의 헤더 확인 | `Content-Type`이 `application/json` |
-| API-53 | MySQL 저장 (v0.3~, F-05) | 할 일을 추가·전환한 뒤 DB 연결을 새로 맺고 목록 조회 (서버 재시작 흉내) | 추가·전환 결과가 그대로 있음 |
-| API-54 | MySQL 저장 (v0.3~) | 저장된 행을 DB에서 직접 확인 | `title`에 앞뒤 공백이 없고, `created_at`은 UTC로 저장됨 |
+| API-53 | PostgreSQL 저장 (v0.3~, F-05) | 할 일을 추가·전환한 뒤 앱과 DB 연결을 새로 만들고 목록 조회 (서버 재시작 흉내) | 추가·전환 결과가 그대로 있음 |
+| API-54 | PostgreSQL 저장 (v0.3~) | 저장된 행을 DB에서 직접 확인 | `title`에 앞뒤 공백이 없고, `id`는 UUID 타입, `created_at`은 시간대 정보와 함께 저장됨. API 응답의 `createdAt`은 UTC(`Z`로 끝남) |
 
 ---
 
@@ -284,4 +286,5 @@ PRD 6장 성공 기준과 연결한다.
 
 ## 5. 정해야 할 것
 
-- MySQL 테스트 DB 준비 방법 (TRD 열린 질문: 테스트용 DB를 따로 둘지, Docker로 띄울지). API-53, API-54는 이것이 정해져야 실행할 수 있다.
+- PostgreSQL 테스트 DB 준비 방법 (TRD 열린 질문: 테스트용 DB를 따로 둘지, Docker로 띄울지). API-53, API-54는 이것이 정해져야 실행할 수 있다.
+- 화면 공통 함수(LIB-xx)와 백엔드 검사·저장소(SRV-xx) 테스트 케이스는 docs/PROMPTS.md 1-2, 2-2 단계에서 추가한다.
